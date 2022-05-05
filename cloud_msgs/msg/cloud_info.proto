@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package cloud_msgs.msg;
+
+
+import "std_msgs/Header.proto"
+
+
+message CloudInfo {
+  optional std_msgs.Header header = 1;
+  repeated int32 startRingIndex = 2;
+  repeated int32 endRingIndex = 3;
+
+  optional float startOrientation = 4;
+  optional float endOrientation = 5;
+  optional float orientationDiff = 6;
+
+  repeated bool segmentedCloudGroundFlag = 7;
+  repeated uint32  segmentedCloudColInd = 8;
+  repeated float segmentedCloudRange = 9;
+}
