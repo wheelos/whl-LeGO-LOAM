@@ -28,6 +28,8 @@
 //  Author: daohu527
 
 
+#pragma once
+
 #include <limits>
 #include <memory>
 
@@ -35,6 +37,7 @@
 #include "pcl/point_types.h"
 
 #include "cyber/cyber.h"
+#include "modules/drivers/proto/pointcloud.pb.h"
 
 namespace apollo {
 namespace tools {
@@ -43,7 +46,8 @@ class ImageProjection final : public cyber::Component<> {
  public:
   using quiet_NaN = std::numeric_limits<float>::quiet_NaN;
   using PointCloudPtr = pcl::PointCloud<pcl::PointXYZI>::Ptr;
-  using ConstPointCloud2Ptr = const std::shared_ptr<sensor_msgs::PointCloud2>;
+  using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
+  using RawPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
 
   ImageProjection();
   ~ImageProjection();
@@ -51,15 +55,19 @@ class ImageProjection final : public cyber::Component<> {
   bool Init() override;
 
  private:
-  void CloudHandler(ConstPointCloud2Ptr& laser_cloud_msg);
+  void CloudHandler(const RawPointCloudPtr& laser_cloud_msg);
 
-  void CopyPointCloud(ConstPointCloud2Ptr& laser_cloud_msg);
+  void CopyPointCloud(const RawPointCloudPtr& laser_cloud_msg,
+      PointCloudPtr& laser_cloud_in,
+      PointCloudRPtr& laser_cloud_in_ring);
   void FindStartEndAngle();
   void ProjectPointCloud();
   void GroundRemoval();
   void CloudSegmentation();
   void PublishCloud();
   void ResetParameters();
+
+  void LabelComponents(int row, int col);
 
   void AllocateMemory();
 
@@ -74,9 +82,6 @@ class ImageProjection final : public cyber::Component<> {
   std::shared_ptr<cyber::Writer<sensor_msgs::PointCloud2>> pub_segmented_cloud_pure;
   std::shared_ptr<cyber::Writer<cloud_msgs::CloudInfo>> pub_segmented_cloud_info;
   std::shared_ptr<cyber::Writer<sensor_msgs::PointCloud2>> pub_outlier_cloud;
-
-  PointCloudPtr laser_cloud_in;
-  pcl::PointCloud<PointXYZIR>::Ptr laser_cloud_in_ring;
 
   PointCloudPtr full_cloud;
   PointCloudPtr full_info_cloud;
@@ -97,11 +102,10 @@ class ImageProjection final : public cyber::Component<> {
   float start_orientation;
   float end_orientation;
 
-  std::shared_ptr<cloud_msgs::CloudInfo> seg_msg;
-  std::shared_ptr<std_msgs::Header> cloud_header;
+  cloud_msgs::CloudInfo seg_msg;
 
-  static constexpr int8_t dirs[4][2] = {
-      {-1, 0}, {0, 1}, {0, -1}, {1, 0}};
+
+  static constexpr int8_t dirs[4][2] = {{-1, 0}, {0, 1}, {0, -1}, {1, 0}};
 
   std::vector<uint16_t> all_pushed_indX;
   std::vector<uint16_t> all_pushed_indY;

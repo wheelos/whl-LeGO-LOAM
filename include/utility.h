@@ -28,5 +28,42 @@
 //  Author: daohu527
 
 
+#pragma once
+
+
+#include "pcl/point_types.h"
+
+
+
+
 static const int N_SCAN = 16;
 static const int HORIZON_SCAN = 1800;
+
+
+using PointCloudPtr = pcl::PointCloud<pcl::PointXYZI>::Ptr;
+using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
+using RawPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
+
+
+void ToPclPointCloud(const RawPointCloudPtr& from, PointCloudPtr& to) {
+  for (int i = 0; i < from->point.size(); ++i) {
+    pcl::PointXYZI point(from->point.x,
+                         from->point.y,
+                         from->point.z,
+                         from->point.intensity);
+    to->push_back(point);
+  }
+}
+
+void ToPclPointCloud(const RawPointCloudPtr& from, PointCloudRPtr& to) {
+  for (int i = 0; i < from->point.size(); ++i) {
+    pcl::PointXYZIR point(from->point.x,
+                          from->point.y,
+                          from->point.z,
+                          from->point.intensity);
+    to->push_back(point);
+  }
+  to->is_dense = laser_cloud_msg->is_dense;
+}
+
+
