@@ -34,18 +34,26 @@
 #include "pcl/point_types.h"
 
 
+namespace apollo {
+namespace tools {
 
 
-static const int N_SCAN = 16;
-static const int HORIZON_SCAN = 1800;
+extern static const int N_SCAN = 16;
+extern static const int HORIZON_SCAN = 1800;
+
+extern const float ang_res_x = 0.2;
+extern const float ang_res_y = 2.0;
+extern const float ang_bottom = 15.0 + 0.1;
+extern const int groundScanInd = 7;
+
 
 
 using PointCloudPtr = pcl::PointCloud<pcl::PointXYZI>::Ptr;
 using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
-using RawPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
+using DriverPointCloudPtr = std::shared_ptr<drivers::PointCloud>;
 
 
-void ToPclPointCloud(const RawPointCloudPtr& from, PointCloudPtr& to) {
+void ToPclPointCloud(const DriverPointCloudPtr& from, const PointCloudPtr& to) {
   for (int i = 0; i < from->point.size(); ++i) {
     pcl::PointXYZI point(from->point.x,
                          from->point.y,
@@ -55,7 +63,7 @@ void ToPclPointCloud(const RawPointCloudPtr& from, PointCloudPtr& to) {
   }
 }
 
-void ToPclPointCloud(const RawPointCloudPtr& from, PointCloudRPtr& to) {
+void ToPclPointCloud(const DriverPointCloudPtr& from, const PointCloudRPtr& to) {
   for (int i = 0; i < from->point.size(); ++i) {
     pcl::PointXYZIR point(from->point.x,
                           from->point.y,
@@ -67,3 +75,22 @@ void ToPclPointCloud(const RawPointCloudPtr& from, PointCloudRPtr& to) {
 }
 
 
+void ToDriverPointCloud(const PointCloudPtr& from, const drivers::PointCloud& to) {
+  for (int i = 0; i < from->point.size(); ++i) {
+    apollo::drivers::PointXYZI point(from->point.x,
+                                     from->point.y,
+                                     from->point.z,
+                                     from->point.intensity);
+    to.point.Add(point);
+  }
+}
+
+
+bool IsNaN(const pcl::PointXYZI& point) {
+  return (!std::isfinite(point.x) ||
+          !std::isfinite(point.y) ||
+          !std::isfinite(point.z));
+}
+
+}  // namespace tools
+}  // namespace apollo

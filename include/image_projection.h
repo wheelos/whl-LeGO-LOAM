@@ -38,6 +38,8 @@
 
 #include "cyber/cyber.h"
 #include "modules/drivers/proto/pointcloud.pb.h"
+#include "modules/tools/ilego_loam/proto/cloud_info.pb.h"
+
 
 namespace apollo {
 namespace tools {
@@ -45,9 +47,10 @@ namespace tools {
 class ImageProjection final : public cyber::Component<> {
  public:
   using quiet_NaN = std::numeric_limits<float>::quiet_NaN;
-  using PointCloudPtr = pcl::PointCloud<pcl::PointXYZI>::Ptr;
+  using PointType = pcl::PointXYZI;
+  using PointCloudPtr = pcl::PointCloud<PointType>::Ptr;
   using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
-  using RawPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
+  using DriverPointCloudPtr = std::shared_ptr<drivers::PointCloud>;
 
   ImageProjection();
   ~ImageProjection();
@@ -55,11 +58,9 @@ class ImageProjection final : public cyber::Component<> {
   bool Init() override;
 
  private:
-  void CloudHandler(const RawPointCloudPtr& laser_cloud_msg);
+  void CloudHandler(const DriverPointCloudPtr& laser_cloud_msg);
 
-  void CopyPointCloud(const RawPointCloudPtr& laser_cloud_msg,
-      PointCloudPtr& laser_cloud_in,
-      PointCloudRPtr& laser_cloud_in_ring);
+  void CopyPointCloud(const DriverPointCloudPtr& laser_cloud_msg);
   void FindStartEndAngle();
   void ProjectPointCloud();
   void GroundRemoval();
@@ -72,16 +73,18 @@ class ImageProjection final : public cyber::Component<> {
   void AllocateMemory();
 
  private:
-  std::shared_ptr<cyber::Reader<sensor_msgs::PointCloud2>> sub_laser_cloud;
+  std::shared_ptr<cyber::Reader<drivers::PointCloud>> sub_laser_cloud;
 
-  std::shared_ptr<cyber::Writer<sensor_msgs::PointCloud2>> pub_full_cloud;
-  std::shared_ptr<cyber::Writer<sensor_msgs::PointCloud2>> pub_full_info_cloud;
-
-  std::shared_ptr<cyber::Writer<sensor_msgs::PointCloud2>> pub_ground_cloud;
-  std::shared_ptr<cyber::Writer<sensor_msgs::PointCloud2>> pub_segmented_cloud;
-  std::shared_ptr<cyber::Writer<sensor_msgs::PointCloud2>> pub_segmented_cloud_pure;
+  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_full_cloud;
+  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_full_info_cloud;
+  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_ground_cloud;
+  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_segmented_cloud;
+  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_segmented_cloud_pure;
   std::shared_ptr<cyber::Writer<cloud_msgs::CloudInfo>> pub_segmented_cloud_info;
-  std::shared_ptr<cyber::Writer<sensor_msgs::PointCloud2>> pub_outlier_cloud;
+  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_outlier_cloud;
+
+  PointCloudPtr laser_cloud_in;
+  PointCloudRPtr laser_cloud_in_ring;
 
   PointCloudPtr full_cloud;
   PointCloudPtr full_info_cloud;
@@ -99,20 +102,14 @@ class ImageProjection final : public cyber::Component<> {
 
   int label_count;
 
-  float start_orientation;
-  float end_orientation;
-
   cloud_msgs::CloudInfo seg_msg;
-
-
-  static constexpr int8_t dirs[4][2] = {{-1, 0}, {0, 1}, {0, -1}, {1, 0}};
+  apollo::common::Header cloud_header;
 
   std::vector<uint16_t> all_pushed_indX;
   std::vector<uint16_t> all_pushed_indY;
 
   std::vector<uint16_t> queue_indX;
   std::vector<uint16_t> queue_indY;
-
 };
 
 CYBER_REGISTER_COMPONENT(ImageProjection)
