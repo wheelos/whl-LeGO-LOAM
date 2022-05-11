@@ -31,15 +31,18 @@
 #pragma once
 
 
+#include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
+#include "pcl/filters/filter.h"
 
+#include "modules/drivers/proto/pointcloud.pb.h"
 
 namespace apollo {
 namespace tools {
 
 
-extern static const int N_SCAN = 16;
-extern static const int HORIZON_SCAN = 1800;
+extern const int N_SCAN = 16;
+extern const int HORIZON_SCAN = 1800;
 
 extern const float ang_res_x = 0.2;
 extern const float ang_res_y = 2.0;
@@ -47,41 +50,37 @@ extern const float ang_bottom = 15.0 + 0.1;
 extern const int groundScanInd = 7;
 
 
+extern const float segmentTheta = 60.0/180.0*M_PI; // decrese this value may improve accuracy
+extern const int segmentValidPointNum = 5;
+extern const int segmentValidLineNum = 3;
+extern const float segmentAlphaX = ang_res_x / 180.0 * M_PI;
+extern const float segmentAlphaY = ang_res_y / 180.0 * M_PI;
+
+
 
 using PointCloudPtr = pcl::PointCloud<pcl::PointXYZI>::Ptr;
-using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
-using DriverPointCloudPtr = std::shared_ptr<drivers::PointCloud>;
+// using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
+using DriverPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
 
 
 void ToPclPointCloud(const DriverPointCloudPtr& from, const PointCloudPtr& to) {
-  for (int i = 0; i < from->point.size(); ++i) {
-    pcl::PointXYZI point(from->point.x,
-                         from->point.y,
-                         from->point.z,
-                         from->point.intensity);
+  for (int i = 0; i < from->point().size(); ++i) {
+    pcl::PointXYZI point(from->point(i).x(),
+                         from->point(i).y(),
+                         from->point(i).z(),
+                         from->point(i).intensity());
     to->push_back(point);
   }
+  to->is_dense = from->is_dense();
 }
 
-void ToPclPointCloud(const DriverPointCloudPtr& from, const PointCloudRPtr& to) {
-  for (int i = 0; i < from->point.size(); ++i) {
-    pcl::PointXYZIR point(from->point.x,
-                          from->point.y,
-                          from->point.z,
-                          from->point.intensity);
-    to->push_back(point);
-  }
-  to->is_dense = laser_cloud_msg->is_dense;
-}
-
-
-void ToDriverPointCloud(const PointCloudPtr& from, const drivers::PointCloud& to) {
-  for (int i = 0; i < from->point.size(); ++i) {
-    apollo::drivers::PointXYZI point(from->point.x,
-                                     from->point.y,
-                                     from->point.z,
-                                     from->point.intensity);
-    to.point.Add(point);
+void ToDriverPointCloud(const PointCloudPtr& from, apollo::drivers::PointCloud& to) {
+  for (size_t i = 0; i < from->points.size(); ++i) {
+    auto pb_point = to.add_point();
+    pb_point->set_x(from->points[i].x);
+    pb_point->set_y(from->points[i].y);
+    pb_point->set_z(from->points[i].z);
+    pb_point->set_intensity(from->points[i].intensity);
   }
 }
 

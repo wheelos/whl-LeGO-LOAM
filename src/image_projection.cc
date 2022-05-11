@@ -28,8 +28,9 @@
 //  Author: daohu527
 
 
-#include "modules/tools/ilego_loam/include/utility.h"
-#include "modules/tools/ilego_loam/include/image_projection.h"
+#include "modules/tools/ilego_loam/flags/lego_loam_gflags.h"
+#include "modules/tools/ilego_loam/src/utility.h"
+#include "modules/tools/ilego_loam/src/image_projection.h"
 
 
 namespace apollo {
@@ -40,7 +41,7 @@ static constexpr int LABEL_INIT = 0;
 static constexpr int LABEL_INVALID = 999999;
 
 ImageProjection::ImageProjection() :
-    nan_point(quiet_NaN(), quiet_NaN(), quiet_NaN(), -1),
+    nan_point(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), -1),
     all_pushed_indX(N_SCAN * HORIZON_SCAN),
     all_pushed_indY(N_SCAN * HORIZON_SCAN),
     queue_indX(N_SCAN * HORIZON_SCAN),
@@ -49,44 +50,46 @@ ImageProjection::ImageProjection() :
 ImageProjection::~ImageProjection() {}
 
 bool ImageProjection::Init() {
-  sub_laser_cloud = node_->CreateReader<drivers::PointCloud>(
+  sub_laser_cloud = node_->CreateReader<apollo::drivers::PointCloud>(
       FLAGS_lidar_topic,
       [&](const DriverPointCloudPtr& point_cloud){
         CloudHandler(point_cloud);
       });
 
-  pub_full_cloud = node_->CreateWriter<drivers::PointCloud>("/full_cloud_projected");
-  pub_full_info_cloud = node_->CreateWriter<drivers::PointCloud>("/full_cloud_info");
+  pub_full_cloud = node_->CreateWriter<apollo::drivers::PointCloud>("/full_cloud_projected");
+  pub_full_info_cloud = node_->CreateWriter<apollo::drivers::PointCloud>("/full_cloud_info");
 
-  pub_ground_cloud = node_->CreateWriter<drivers::PointCloud>("/ground_cloud");
-  pub_segmented_cloud = node_->CreateWriter<drivers::PointCloud>("/segmented_cloud");
-  pub_segmented_cloud_pure = node_->CreateWriter<drivers::PointCloud>("/segmented_cloud_pure");
+  pub_ground_cloud = node_->CreateWriter<apollo::drivers::PointCloud>("/ground_cloud");
+  pub_segmented_cloud = node_->CreateWriter<apollo::drivers::PointCloud>("/segmented_cloud");
+  pub_segmented_cloud_pure = node_->CreateWriter<apollo::drivers::PointCloud>("/segmented_cloud_pure");
   pub_segmented_cloud_info = node_->CreateWriter<cloud_msgs::CloudInfo>("/segmented_cloud_info");
-  pub_outlier_cloud = node_->CreateWriter<drivers::PointCloud>("/outlier_cloud");
+  pub_outlier_cloud = node_->CreateWriter<apollo::drivers::PointCloud>("/outlier_cloud");
+  return true;
 }
 
 void ImageProjection::AllocateMemory() {
-  laser_cloud_in = std::make_shared<pcl::PointCloud<PointType>>();
-  laser_cloud_in_ring = std::make_shared<pcl::PointCloud<PointXYZIR>>();
+  laser_cloud_in.reset(new pcl::PointCloud<PointType>());
+  // laser_cloud_in_ring.reset(new pcl::PointCloud<PointXYZIR>());
+  laser_cloud_in_ring.reset(new pcl::PointCloud<PointType>());
 
-  full_cloud = std::make_shared<pcl::PointCloud<PointType>>();
-  full_info_cloud = std::make_shared<pcl::PointCloud<PointType>>();
+  full_cloud.reset(new pcl::PointCloud<PointType>());
+  full_info_cloud.reset(new pcl::PointCloud<PointType>());
   full_cloud->points.resize(N_SCAN * HORIZON_SCAN);
   full_info_cloud->points.resize(N_SCAN * HORIZON_SCAN);
 
-  ground_cloud = std::make_shared<pcl::PointCloud<PointType>>();
+  ground_cloud.reset(new pcl::PointCloud<PointType>());
 
-  segmented_cloud = std::make_shared<pcl::PointCloud<PointType>>();
-  segmented_cloud_pure = std::make_shared<pcl::PointCloud<PointType>>();
-  outlier_cloud = std::make_shared<pcl::PointCloud<PointType>>();
+  segmented_cloud.reset(new pcl::PointCloud<PointType>());
+  segmented_cloud_pure.reset(new pcl::PointCloud<PointType>());
+  outlier_cloud.reset(new pcl::PointCloud<PointType>());
 
   // todo(zero): need to set default value
-  seg_msg.startRingIndex->Reserve(N_SCAN);
-  seg_msg.endRingIndex->Reserve(N_SCAN);
+  seg_msg.mutable_start_ring_index()->Reserve(N_SCAN);
+  seg_msg.mutable_end_ring_index()->Reserve(N_SCAN);
 
-  seg_msg.segmentedCloudGroundFlag->Reserve(N_SCAN * HORIZON_SCAN);
-  seg_msg.segmentedCloudColInd->Reserve(N_SCAN * HORIZON_SCAN);
-  seg_msg.segmentedCloudRange->Reserve(N_SCAN * HORIZON_SCAN);
+  seg_msg.mutable_segmented_cloud_ground_flag()->Reserve(N_SCAN * HORIZON_SCAN);
+  seg_msg.mutable_segmented_cloud_col_ind()->Reserve(N_SCAN * HORIZON_SCAN);
+  seg_msg.mutable_segmented_cloud_range()->Reserve(N_SCAN * HORIZON_SCAN);
 }
 
 void ImageProjection::ResetParameters() {
@@ -107,7 +110,7 @@ void ImageProjection::ResetParameters() {
 }
 
 void ImageProjection::CopyPointCloud(const DriverPointCloudPtr& laser_cloud_msg) {
-  cloud_header = laser_cloud_msg->header;
+  cloud_header.CopyFrom(laser_cloud_msg->header());
 
   ToPclPointCloud(laser_cloud_msg, laser_cloud_in);
 
@@ -122,12 +125,12 @@ void ImageProjection::CopyPointCloud(const DriverPointCloudPtr& laser_cloud_msg)
 }
 
 void ImageProjection::FindStartEndAngle() {
-  seg_msg.startOrientation = atan2(laser_cloud_in->points.front().x, laser_cloud_in->points.front().y);
-  seg_msg.endOrientation = atan2(laser_cloud_in->points.back().x, laser_cloud_in->points.back().y) + 2 * M_PI;
+  seg_msg.set_start_orientation(atan2(laser_cloud_in->points.front().x, laser_cloud_in->points.front().y));
+  seg_msg.set_end_orientation(atan2(laser_cloud_in->points.back().x, laser_cloud_in->points.back().y) + 2 * M_PI);
 
-  seg_msg.orientationDiff = seg_msg.endOrientation - seg_msg.startOrientation;
-  CHECK(seg_msg.orientationDiff < 3 * M_PI) << "Point cloud orientation diff >= 3*M_PI";
-  CHECK(seg_msg.orientationDiff > M_PI) << "Point cloud orientation diff <= M_PI";
+  seg_msg.set_orientation_diff(seg_msg.end_orientation() - seg_msg.start_orientation());
+  CHECK(seg_msg.orientation_diff() < 3 * M_PI) << "Point cloud orientation diff >= 3*M_PI";
+  CHECK(seg_msg.orientation_diff() > M_PI) << "Point cloud orientation diff <= M_PI";
 }
 
 void ImageProjection::ProjectPointCloud() {
@@ -136,7 +139,8 @@ void ImageProjection::ProjectPointCloud() {
 
     size_t row_idn;
     if (FLAGS_use_cloud_ring) {
-      row_idn = laser_cloud_in_ring->points[i].ring;
+      // row_idn = laser_cloud_in_ring->points[i].ring;
+      row_idn = 0;
     } else {
       float vertical_angle = atan2(this_point.z, sqrt(this_point.x*this_point.x + this_point.y*this_point.y)) * 180 / M_PI;
       row_idn = (vertical_angle + ang_bottom) / ang_res_y;
@@ -221,13 +225,13 @@ void ImageProjection::CloudSegmentation() {
 
   int size_of_seg_cloud = 0;
   for (size_t i = 0; i < N_SCAN; ++i) {
-    seg_msg.startRingIndex[i] = size_of_seg_cloud - 1 + 5;
+    seg_msg.set_start_ring_index(i, size_of_seg_cloud - 1 + 5);
 
     for (size_t j = 0; j < HORIZON_SCAN; ++j) {
       if (label_mat.at<int>(i, j) > 0 || ground_mat.at<int8_t>(i, j) == 1) {
         if (label_mat.at<int>(i, j) == LABEL_INVALID) {
           if (i > groundScanInd && j % 5 == 0) {
-            outlier_cloud->push_back(full_cloud->points[j + i * Horizon_SCAN]);
+            outlier_cloud->push_back(full_cloud->points[j + i * HORIZON_SCAN]);
           }
           continue;
         }
@@ -237,20 +241,20 @@ void ImageProjection::CloudSegmentation() {
             continue;
         }
 
-        seg_msg.segmentedCloudGroundFlag[size_of_seg_cloud] = (ground_mat.at<int8_t>(i, j) == 1);
-        seg_msg.segmentedCloudColInd[size_of_seg_cloud] = j;
-        seg_msg.segmentedCloudRange[size_of_seg_cloud] = range_mat.at<float>(i, j);
-        segmented_cloud->push_back(full_cloud->points[j + i * Horizon_SCAN]);
+        seg_msg.set_segmented_cloud_ground_flag(size_of_seg_cloud, (ground_mat.at<int8_t>(i, j) == 1));
+        seg_msg.set_segmented_cloud_col_ind(size_of_seg_cloud, j);
+        seg_msg.set_segmented_cloud_range(size_of_seg_cloud, range_mat.at<float>(i, j));
+        segmented_cloud->push_back(full_cloud->points[j + i * HORIZON_SCAN]);
         ++size_of_seg_cloud;
       }
     }
-    seg_msg.endRingIndex[i] = size_of_seg_cloud - 1 - 5;
+    seg_msg.set_end_ring_index(i, size_of_seg_cloud - 1 - 5);
   }
 
   for (size_t i = 0; i < N_SCAN; ++i) {
     for (size_t j = 0; j < HORIZON_SCAN; ++j) {
       if (label_mat.at<int>(i, j) > 0 && label_mat.at<int>(i, j) != LABEL_INVALID) {
-        segmented_cloud_pure->push_back(full_cloud->points[j + i*Horizon_SCAN]);
+        segmented_cloud_pure->push_back(full_cloud->points[j + i*HORIZON_SCAN]);
         segmented_cloud_pure->points.back().intensity = label_mat.at<int>(i, j);
       }
     }
@@ -259,43 +263,33 @@ void ImageProjection::CloudSegmentation() {
 
 void ImageProjection::PublishCloud() {
   // todo(zero): check the header
-  seg_msg.header.stamp = cloud_header.timestamp_sec;
+  seg_msg.mutable_header()->set_time(cloud_header.timestamp_sec());
   pub_segmented_cloud_info->Write(seg_msg);
 
-  drivers::PointCloud laser_cloud_temp;
+  apollo::drivers::PointCloud laser_cloud_temp;
   ToDriverPointCloud(outlier_cloud, laser_cloud_temp);
-  laser_cloud_temp.header.timestamp_sec = cloud_header.timestamp_sec;
-  laser_cloud_temp.header.frame_id = "base_link";
+  laser_cloud_temp.mutable_header()->set_timestamp_sec(cloud_header.timestamp_sec());
+  laser_cloud_temp.mutable_header()->set_frame_id("base_link");
   pub_outlier_cloud->Write(laser_cloud_temp);
 
-  laser_cloud_temp.point.Clear();
+  laser_cloud_temp.mutable_point()->Clear();
   ToDriverPointCloud(segmented_cloud, laser_cloud_temp);
-  laser_cloud_temp.header.timestamp_sec = cloud_header.timestamp_sec;
-  laser_cloud_temp.header.frame_id = "base_link";
   pub_segmented_cloud->Write(laser_cloud_temp);
 
-  laser_cloud_temp.point.Clear();
+  laser_cloud_temp.mutable_point()->Clear();
   ToDriverPointCloud(full_cloud, laser_cloud_temp);
-  laser_cloud_temp.header.timestamp_sec = cloud_header.timestamp_sec;
-  laser_cloud_temp.header.frame_id = "base_link";
   pub_full_cloud->Write(laser_cloud_temp);
 
-  laser_cloud_temp.point.Clear();
+  laser_cloud_temp.mutable_point()->Clear();
   ToDriverPointCloud(full_info_cloud, laser_cloud_temp);
-  laser_cloud_temp.header.timestamp_sec = cloud_header.timestamp_sec;
-  laser_cloud_temp.header.frame_id = "base_link";
   pub_full_info_cloud->Write(laser_cloud_temp);
 
-  laser_cloud_temp.point.Clear();
+  laser_cloud_temp.mutable_point()->Clear();
   ToDriverPointCloud(ground_cloud, laser_cloud_temp);
-  laser_cloud_temp.header.timestamp_sec = cloud_header.timestamp_sec;
-  laser_cloud_temp.header.frame_id = "base_link";
   pub_ground_cloud->Write(laser_cloud_temp);
 
-  laser_cloud_temp.point.Clear();
+  laser_cloud_temp.mutable_point()->Clear();
   ToDriverPointCloud(segmented_cloud_pure, laser_cloud_temp);
-  laser_cloud_temp.header.timestamp_sec = cloud_header.timestamp_sec;
-  laser_cloud_temp.header.frame_id = "base_link";
   pub_segmented_cloud_pure->Write(laser_cloud_temp);
 }
 
@@ -337,6 +331,7 @@ void ImageProjection::LabelComponents(int row, int col) {
       auto [d2, d1] = std::minmax(range_mat.at<float>(from_indX, from_indY),
           range_mat.at<float>(this_indX, this_indY));
 
+      float alpha;
       if (dirs[i][0] == 0)
         alpha = segmentAlphaX;
       else
@@ -378,7 +373,7 @@ void ImageProjection::LabelComponents(int row, int col) {
   if (feasible_segment) {
     ++label_count;
   } else {
-    for (size_t i = 0; i < all_pushed_ind_size; ++i) {
+    for (int i = 0; i < all_pushed_ind_size; ++i) {
       label_mat.at<int>(all_pushed_indX[i], all_pushed_indY[i]) = LABEL_INVALID;
     }
   }

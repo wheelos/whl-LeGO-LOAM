@@ -9,12 +9,17 @@ cc_library(
     "image_projection.cc",
   ],
   hdrs = [
-    "//modules/tools/ilego_loam/include/utility.h",
-    "//modules/tools/ilego_loam/include/image_projection.h",
+    "utility.h",
+    "image_projection.h",
   ],
   deps = [
-    "//lego_loam_gflags",
-    "//cloud_info",
+    "//cyber",
+    "//modules/drivers/proto:pointcloud_cc_proto",
+    "//modules/tools/ilego_loam/flags:lego_loam_gflags",
+    "//modules/tools/ilego_loam/proto:cloud_info_cc_proto",
+    "@local_config_pcl//:pcl",
+    "@eigen",
+    "@opencv//:core",
   ],
 )
 

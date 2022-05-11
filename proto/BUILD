@@ -5,16 +5,13 @@ load("//tools:python_rules.bzl", "py_proto_library")
 package(default_visibility = ["//visibility:public"])
 
 cc_proto_library(
-    name = "cloud_info",
+    name = "cloud_info_cc_proto",
     deps = [
-        ":cloud_info",
+        ":cloud_info_proto",
     ],
 )
 
 proto_library(
-    name = "cloud_info",
+    name = "cloud_info_proto",
     srcs = ["cloud_info.proto"],
-    deps = [
-        "//modules/tools/ilego_loam/proto:cloud_info",
-    ],
 )

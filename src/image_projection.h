@@ -32,9 +32,9 @@
 
 #include <limits>
 #include <memory>
+#include <opencv2/opencv.hpp>
 
-#include "pcl/point_cloud.h"
-#include "pcl/point_types.h"
+
 
 #include "cyber/cyber.h"
 #include "modules/drivers/proto/pointcloud.pb.h"
@@ -46,11 +46,11 @@ namespace tools {
 
 class ImageProjection final : public cyber::Component<> {
  public:
-  using quiet_NaN = std::numeric_limits<float>::quiet_NaN;
+  // using quiet_NaN = std::numeric_limits<float>::quiet_NaN;
   using PointType = pcl::PointXYZI;
   using PointCloudPtr = pcl::PointCloud<PointType>::Ptr;
-  using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
-  using DriverPointCloudPtr = std::shared_ptr<drivers::PointCloud>;
+  // using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
+  using DriverPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
 
   ImageProjection();
   ~ImageProjection();
@@ -73,18 +73,19 @@ class ImageProjection final : public cyber::Component<> {
   void AllocateMemory();
 
  private:
-  std::shared_ptr<cyber::Reader<drivers::PointCloud>> sub_laser_cloud;
+  std::shared_ptr<cyber::Reader<apollo::drivers::PointCloud>> sub_laser_cloud;
 
-  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_full_cloud;
-  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_full_info_cloud;
-  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_ground_cloud;
-  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_segmented_cloud;
-  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_segmented_cloud_pure;
+  std::shared_ptr<cyber::Writer<apollo::drivers::PointCloud>> pub_full_cloud;
+  std::shared_ptr<cyber::Writer<apollo::drivers::PointCloud>> pub_full_info_cloud;
+  std::shared_ptr<cyber::Writer<apollo::drivers::PointCloud>> pub_ground_cloud;
+  std::shared_ptr<cyber::Writer<apollo::drivers::PointCloud>> pub_segmented_cloud;
+  std::shared_ptr<cyber::Writer<apollo::drivers::PointCloud>> pub_segmented_cloud_pure;
   std::shared_ptr<cyber::Writer<cloud_msgs::CloudInfo>> pub_segmented_cloud_info;
-  std::shared_ptr<cyber::Writer<drivers::PointCloud>> pub_outlier_cloud;
+  std::shared_ptr<cyber::Writer<apollo::drivers::PointCloud>> pub_outlier_cloud;
 
   PointCloudPtr laser_cloud_in;
-  PointCloudRPtr laser_cloud_in_ring;
+  // PointCloudRPtr laser_cloud_in_ring;
+  PointCloudPtr laser_cloud_in_ring;
 
   PointCloudPtr full_cloud;
   PointCloudPtr full_info_cloud;

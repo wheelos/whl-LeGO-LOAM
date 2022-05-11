@@ -17,7 +17,7 @@
 //  Author: daohu527
 
 
-#pargma once
+#pragma once
 
 
 #include "gflags/gflags.h"

@@ -9,14 +9,14 @@ message Header {
 
 message CloudInfo {
   optional Header header = 1;
-  repeated int32 startRingIndex = 2;
-  repeated int32 endRingIndex = 3;
+  repeated int32 start_ring_index = 2;
+  repeated int32 end_ring_index = 3;
 
-  optional float startOrientation = 4;
-  optional float endOrientation = 5;
-  optional float orientationDiff = 6;
+  optional float start_orientation = 4;
+  optional float end_orientation = 5;
+  optional float orientation_diff = 6;
 
-  repeated bool segmentedCloudGroundFlag = 7;
-  repeated uint32 segmentedCloudColInd = 8;
-  repeated float segmentedCloudRange = 9;
+  repeated bool segmented_cloud_ground_flag = 7;
+  repeated uint32 segmented_cloud_col_ind = 8;
+  repeated float segmented_cloud_range = 9;
 }
