@@ -111,6 +111,9 @@ class ImageProjection final : public cyber::Component<> {
 
   std::vector<uint16_t> queue_indX;
   std::vector<uint16_t> queue_indY;
+
+  std::stack<pair<int, int>> st;
+  std::vector<pair<int, int>> cluster;
 };
 
 CYBER_REGISTER_COMPONENT(ImageProjection)

@@ -90,6 +90,8 @@ void ImageProjection::AllocateMemory() {
   seg_msg.mutable_segmented_cloud_ground_flag()->Reserve(N_SCAN * HORIZON_SCAN);
   seg_msg.mutable_segmented_cloud_col_ind()->Reserve(N_SCAN * HORIZON_SCAN);
   seg_msg.mutable_segmented_cloud_range()->Reserve(N_SCAN * HORIZON_SCAN);
+
+  cluster.reserve(N_SCAN * HORIZON_SCAN);
 }
 
 void ImageProjection::ResetParameters() {
@@ -375,6 +377,64 @@ void ImageProjection::LabelComponents(int row, int col) {
   } else {
     for (int i = 0; i < all_pushed_ind_size; ++i) {
       label_mat.at<int>(all_pushed_indX[i], all_pushed_indY[i]) = LABEL_INVALID;
+    }
+  }
+}
+
+void ImageProjection::LabelComponents(int row, int col) {
+  bool line_count_flag[N_SCAN] = {false};
+
+  st.push({row, col});
+  cluster.clear();
+
+  while(!st.empty()) {
+    auto& [c_row, c_col] = st.top();
+    st.pop();
+
+    cluster.push_back({c_row, c_col});
+    label_mat.at<int>(c_row, c_col) = label_count;
+
+    for (int i = 0; i < 4; ++i) {
+      int n_row = c_row + dirs[i][0];
+      int n_col = c_col + dirs[i][1];
+
+      if (n_row >= 0 && n_row < N_SCAN && n_col >= 0 && n_col < HORIZON_SCAN &&
+          label_mat.at<int>(n_row, n_col) == LABEL_INIT) {
+        auto& [d2, d1] = std::minmax(range_mat.at<float>(c_row, c_col),
+            range_mat.at<float>(n_row, n_col));
+
+        float alpha = dirs[i][0] == 0 ? segmentAlphaX : segmentAlphaY;
+        float angle = atan2(d2 * sin(alpha), d1 - d2 * cos(alpha));
+
+        if (angle > segmentTheta) {
+          stack.push({n_row, n_col});
+          label_mat.at<int>(n_row, n_col) = label_count;
+          line_count_flag[n_row] = true;
+        }
+      }
+    }
+  }
+
+  bool feasible_segment = false;
+  if (cluster.size() >= 30) {
+    feasible_segment = true;
+  } else if (cluster.size() >= segmentValidPointNum) {
+    int line_count = 0;
+    for (size_t i = 0; i < N_SCAN; ++i) {
+      if (line_count_flag[i]) {
+        ++line_count;
+      }
+    }
+
+    if (line_count >= segmentValidLineNum)
+      feasible_segment = true;
+  }
+
+  if (feasible_segment) {
+    ++label_count;
+  } else {
+    for (auto& [l_row, l_col] : cluster) {
+      label_mat.at<int>(l_row, l_col) = LABEL_INVALID;
     }
   }
 }
