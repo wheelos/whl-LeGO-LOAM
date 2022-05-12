@@ -27,3 +27,96 @@
 //  Created Date: 2022-5-5
 //  Author: daohu527
 
+
+namespace apollo {
+namespace tools {
+
+
+FeatureAssociation::FeatureAssociation() {}
+FeatureAssociation::~FeatureAssociation() {}
+
+bool FeatureAssociation::Init() {
+  sub_imu = node_->CreateReader<apollo::localization::CorrectedImu>(
+      FLAGS_outlier_cloud_topic,
+      [&](const std::shared_ptr<apollo::localization::CorrectedImu>& imu_msg) {
+        OutlierCloudHandler(imu_msg);
+      });
+
+  pub_corner_points_sharp = node_->CreateWriter<apollo::drivers::PointCloud>("laser_cloud_sharp");
+  pub_corner_points_less_sharp = node_->CreateWriter<apollo::drivers::PointCloud>("laser_cloud_less_sharp");
+  pub_surf_points_flat = node_->CreateWriter<apollo::drivers::PointCloud>("laser_cloud_flat");
+  pub_surf_points_less_flat = node_->CreateWriter<apollo::drivers::PointCloud>("laser_cloud_less_flat");
+  pub_laser_cloud_corner_last = node_->CreateWriter<apollo::drivers::PointCloud>("laser_cloud_corner_last");
+  pub_laser_cloud_surf_last = node_->CreateWriter<apollo::drivers::PointCloud>("laser_cloud_surf_last");
+  pub_outlier_cloud_last = node_->CreateWriter<apollo::drivers::PointCloud>("outlier_cloud_last");
+  pub_laser_odometry = node_->CreateWriter<nav_msgs::Odometry>("laser_odom_to_init");
+
+  InitializationValue();
+
+  return true;
+}
+
+
+void FeatureAssociation::ImuHandler(
+    const std::shared_ptr<apollo::localization::CorrectedImu>& imu_in) {
+
+}
+
+
+bool FeatureAssociation::Proc() {
+
+  return true;
+}
+
+
+void FeatureAssociation::AdjustDistortion() {
+
+}
+
+void FeatureAssociation::CalculateSmoothness() {
+  int cloud_size = segmented_cloud->points.size();
+  for (int i = 5; i < cloud_size - 5; ++i) {
+    auto cur = seg_info.segmentedCloudRange.begin() + i;
+
+    float diff_range = std::reduce(cur - 5, cur + 5, -11*(*cur));
+
+    cloud_curvature[i] = diff_range * diff_range;
+    cloud_neighbor_picked[i] = 0;
+    cloud_label[i] = 0;
+
+    cloud_smoothness[i].value = cloud_curvature[i];
+    cloud_smoothness[i].ind = i;
+  }
+}
+
+
+void FeatureAssociation::MarkOccludedPoints() {
+  int cloud_size = segmented_cloud->points.size();
+  // todo(zero): why 6 and not 5
+  for (int i = 5; i < cloud_size - 6; ++i) {
+    float depth1 = seg_info.segmented_cloud_range[i];
+    float depth2 = seg_info.segmented_cloud_range[i+1];
+    int column_diff = std::abs(static_cast<int>(
+                        seg_info.segmented_cloud_col_ind[i+1] -
+                        seg_info.segmented_cloud_col_ind[i]));
+    if (column_diff < 10) {
+      if (depth1 - depth2 > 0.3) {
+
+      } else if (depth2 - depth1 > 0.3) {
+
+      }
+    }
+
+    float diff1 = std::fabs(seg_info.segmented_cloud_range[i-1] - seg_info.segmented_cloud_range[i]);
+    float diff2 = std::fabs(seg_info.segmented_cloud_range[i+1] - seg_info.segmented_cloud_range[i]);
+
+    int threshold = 0.02 * seg_info.segmented_cloud_range[i];
+    if (diff1 > threshold && diff2 > threshold) {
+      cloud_neighbor_picked[i] = 1;
+    }
+  }
+}
+
+
+}  // namespace tools
+}  // namespace apollo

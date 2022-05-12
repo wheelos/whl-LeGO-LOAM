@@ -28,15 +28,62 @@
 //  Author: daohu527
 
 
+#pragma once
+
+
 #include "cyber/cyber.h"
+#include "modules/tools/ilego_loam/proto/cloud_info.pb.h"
+
+#include "modules/tools/ilego_loam/src/utility.h"
+
 
 namespace apollo {
 namespace tools {
 
-class FeatureAssociation final : public cyber::Component<> {
+
+class FeatureAssociation final : public apollo::cyber::TimerComponent {
  public:
+  using PointCloudReader = std::shared_ptr<cyber::Reader<apollo::drivers::PointCloud>>;
+  using PointCloudWriter = std::shared_ptr<cyber::Writer<apollo::drivers::PointCloud>>;
+
+  FeatureAssociation();
+  ~FeatureAssociation();
+
+  bool Init() override;
+  bool Proc() override;
+ private:
+
 
  private:
+  // todo(zero): check if same as sensor_msgs::Imu?
+  PointCloudReader sub_segmented_cloud;
+  std::shared_ptr<cyber::Reader<cloud_msgs::CloudInfo>> sub_segmented_cloud_info;
+  PointCloudReader sub_outlier_cloud;
+  std::shared_ptr<cyber::Reader<apollo::localization::CorrectedImu>> sub_imu;
+
+  PointCloudWriter pub_corner_points_sharp;
+  PointCloudWriter pub_corner_points_less_sharp;
+  PointCloudWriter pub_surf_points_flat;
+  PointCloudWriter pub_surf_points_less_flat;
+  PointCloudWriter pub_laser_cloud_corner_last;
+  PointCloudWriter pub_laser_cloud_surf_last;
+  PointCloudWriter pub_outlier_cloud_last;
+  std::shared_ptr<cyber::Writer<nav_msgs::Odometry>> pub_laser_odometry;
+
+  pcl::VoxelGrid<PointType> downSizeFilter;
+
+  double timeScanCur;
+  double timeNewSegmentedCloud;
+  double timeNewSegmentedCloudInfo;
+  double timeNewOutlierCloud;
+
+  bool newSegmentedCloud;
+  bool newSegmentedCloudInfo;
+  bool newOutlierCloud;
+
+  cloud_msgs::CloudInfo seg_info;
+  apollo::common::Header cloud_header;
+
 
 };
 
