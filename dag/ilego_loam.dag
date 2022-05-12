@@ -1,5 +1,5 @@
 module_config {
-  module_library : "/apollo/bazel-bin/modules/tools/ilego_loam/src/image_projection.so"
+  module_library : "/apollo/bazel-bin/modules/tools/ilego_loam/src/libimage_projection.so"
   components {
     class_name : "ImageProjection"
     config {

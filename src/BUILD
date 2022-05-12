@@ -3,8 +3,16 @@ load("//tools:cpplint.bzl", "cpplint")
 
 package(default_visibility = ["//visibility:public"])
 
+
+cc_binary(
+  name = "libimage_projection.so",
+  linkshared = True,
+  linkstatic = False,
+  deps = [":lib_image_projection"],
+)
+
 cc_library(
-  name = "image_projection",
+  name = "lib_image_projection",
   srcs = [
     "image_projection.cc",
   ],

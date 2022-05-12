@@ -29,7 +29,6 @@
 
 
 #include "modules/tools/ilego_loam/flags/lego_loam_gflags.h"
-#include "modules/tools/ilego_loam/src/utility.h"
 #include "modules/tools/ilego_loam/src/image_projection.h"
 
 
@@ -55,6 +54,8 @@ bool ImageProjection::Init() {
   sub_laser_cloud = node_->CreateReader<apollo::drivers::PointCloud>(
       FLAGS_lidar_topic,
       [&](const DriverPointCloudPtr& point_cloud){
+        // todo(zero): check need lock???
+        // std::lock_guard<std::mutex> lock(mutex_);
         CloudHandler(point_cloud);
       });
 
@@ -66,6 +67,9 @@ bool ImageProjection::Init() {
   pub_segmented_cloud_pure = node_->CreateWriter<apollo::drivers::PointCloud>("/segmented_cloud_pure");
   pub_segmented_cloud_info = node_->CreateWriter<cloud_msgs::CloudInfo>("/segmented_cloud_info");
   pub_outlier_cloud = node_->CreateWriter<apollo::drivers::PointCloud>("/outlier_cloud");
+
+  AllocateMemory();
+  ResetParameters();
   return true;
 }
 
@@ -86,12 +90,12 @@ void ImageProjection::AllocateMemory() {
   outlier_cloud.reset(new pcl::PointCloud<PointType>());
 
   // todo(zero): need to set default value
-  seg_msg.mutable_start_ring_index()->Reserve(N_SCAN);
-  seg_msg.mutable_end_ring_index()->Reserve(N_SCAN);
+  seg_msg.mutable_start_ring_index()->Resize(N_SCAN, 0);
+  seg_msg.mutable_end_ring_index()->Resize(N_SCAN, 0);
 
-  seg_msg.mutable_segmented_cloud_ground_flag()->Reserve(N_SCAN * HORIZON_SCAN);
-  seg_msg.mutable_segmented_cloud_col_ind()->Reserve(N_SCAN * HORIZON_SCAN);
-  seg_msg.mutable_segmented_cloud_range()->Reserve(N_SCAN * HORIZON_SCAN);
+  seg_msg.mutable_segmented_cloud_ground_flag()->Resize(N_SCAN * HORIZON_SCAN, false);
+  seg_msg.mutable_segmented_cloud_col_ind()->Resize(N_SCAN * HORIZON_SCAN, 0);
+  seg_msg.mutable_segmented_cloud_range()->Resize(N_SCAN * HORIZON_SCAN, 0);
 
   cluster.reserve(N_SCAN * HORIZON_SCAN);
 }
@@ -115,12 +119,9 @@ void ImageProjection::ResetParameters() {
 
 void ImageProjection::CopyPointCloud(const DriverPointCloudPtr& laser_cloud_msg) {
   cloud_header.CopyFrom(laser_cloud_msg->header());
-
   ToPclPointCloud(laser_cloud_msg, laser_cloud_in);
-
   std::vector<int> indices;
   pcl::removeNaNFromPointCloud(*laser_cloud_in, *laser_cloud_in, indices);
-
   if (FLAGS_use_cloud_ring) {
     ToPclPointCloud(laser_cloud_msg, laser_cloud_in_ring);
     ACHECK(laser_cloud_in_ring->is_dense) <<
@@ -231,7 +232,6 @@ void ImageProjection::CloudSegmentation() {
   int size_of_seg_cloud = 0;
   for (size_t i = 0; i < N_SCAN; ++i) {
     seg_msg.set_start_ring_index(i, size_of_seg_cloud - 1 + 5);
-
     for (size_t j = 0; j < HORIZON_SCAN; ++j) {
       if (label_mat.at<int>(i, j) > 0 || ground_mat.at<int8_t>(i, j) == 1) {
         if (label_mat.at<int>(i, j) == LABEL_INVALID) {
@@ -251,6 +251,7 @@ void ImageProjection::CloudSegmentation() {
         seg_msg.set_segmented_cloud_range(size_of_seg_cloud, range_mat.at<float>(i, j));
         segmented_cloud->push_back(full_cloud->points[j + i * HORIZON_SCAN]);
         ++size_of_seg_cloud;
+        AINFO << "size_of_seg_cloud: " << size_of_seg_cloud;
       }
     }
     seg_msg.set_end_ring_index(i, size_of_seg_cloud - 1 - 5);

@@ -35,10 +35,10 @@
 #include <opencv2/opencv.hpp>
 
 
-
 #include "cyber/cyber.h"
-#include "modules/drivers/proto/pointcloud.pb.h"
 #include "modules/tools/ilego_loam/proto/cloud_info.pb.h"
+
+#include "modules/tools/ilego_loam/src/utility.h"
 
 
 namespace apollo {
