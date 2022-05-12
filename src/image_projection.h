@@ -89,8 +89,6 @@ class ImageProjection final : public cyber::Component<> {
   PointCloudPtr segmented_cloud_pure;
   PointCloudPtr outlier_cloud;
 
-  pcl::PointXYZI nan_point;
-
   cv::Mat range_mat;
   cv::Mat label_mat;
   cv::Mat ground_mat;
@@ -100,14 +98,8 @@ class ImageProjection final : public cyber::Component<> {
   cloud_msgs::CloudInfo seg_msg;
   apollo::common::Header cloud_header;
 
-  std::vector<uint16_t> all_pushed_indX;
-  std::vector<uint16_t> all_pushed_indY;
-
-  std::vector<uint16_t> queue_indX;
-  std::vector<uint16_t> queue_indY;
-
-  std::stack<pair<int, int>> st;
-  std::vector<pair<int, int>> cluster;
+  std::stack<std::pair<int, int>> st;
+  std::vector<std::pair<int, int>> cluster;
 };
 
 CYBER_REGISTER_COMPONENT(ImageProjection)

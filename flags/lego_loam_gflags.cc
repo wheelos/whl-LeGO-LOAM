@@ -20,7 +20,8 @@
 #include "modules/tools/ilego_loam/flags/lego_loam_gflags.h"
 
 
-DEFINE_string(lidar_topic, "", "lidar topic");
+DEFINE_string(lidar_topic, "/apollo/sensor/lidar32/compensator/PointCloud2",
+    "lidar topic");
 
 DEFINE_bool(use_cloud_ring, false, "use cloud ring or not");
 
