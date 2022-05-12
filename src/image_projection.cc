@@ -38,17 +38,16 @@ namespace tools {
 
 static constexpr int8_t dirs[4][2] = {{-1, 0}, {0, 1}, {0, -1}, {1, 0}};
 static constexpr int LABEL_INIT = 0;
-static constexpr int LABEL_INVALID = 999999;
+static constexpr int LABEL_INVALID = INT_MAX;
 
-ImageProjection::ImageProjection() :
-    nan_point(std::numeric_limits<float>::quiet_NaN(),
-              std::numeric_limits<float>::quiet_NaN(),
-              std::numeric_limits<float>::quiet_NaN(),
-              -1),
-    all_pushed_indX(N_SCAN * HORIZON_SCAN),
-    all_pushed_indY(N_SCAN * HORIZON_SCAN),
-    queue_indX(N_SCAN * HORIZON_SCAN),
-    queue_indY(N_SCAN * HORIZON_SCAN) {}
+static const pcl::PointXYZI nan_point(
+    std::numeric_limits<float>::quiet_NaN(),
+    std::numeric_limits<float>::quiet_NaN(),
+    std::numeric_limits<float>::quiet_NaN(),
+    -1);
+
+
+ImageProjection::ImageProjection() {}
 
 ImageProjection::~ImageProjection() {}
 
@@ -247,7 +246,7 @@ void ImageProjection::CloudSegmentation() {
             continue;
         }
 
-        seg_msg.set_segmented_cloud_ground_flag(size_of_seg_cloud, (ground_mat.at<int8_t>(i, j) == 1));
+        seg_msg.set_segmented_cloud_ground_flag(size_of_seg_cloud, ground_mat.at<int8_t>(i, j) == 1);
         seg_msg.set_segmented_cloud_col_ind(size_of_seg_cloud, j);
         seg_msg.set_segmented_cloud_range(size_of_seg_cloud, range_mat.at<float>(i, j));
         segmented_cloud->push_back(full_cloud->points[j + i * HORIZON_SCAN]);
@@ -300,92 +299,6 @@ void ImageProjection::PublishCloud() {
 }
 
 void ImageProjection::LabelComponents(int row, int col) {
-  queue_indX[0] = row;
-  queue_indY[0] = col;
-
-  all_pushed_indX[0] = row;
-  all_pushed_indY[0] = col;
-  int all_pushed_ind_size = 1;
-
-  int queue_start_ind = 0;
-  int queue_end_ind = 1;
-  bool line_count_flag[N_SCAN] = {false};
-
-  int queue_size = 1;
-  while(queue_size > 0) {
-    int from_indX = queue_indX[queue_start_ind];
-    int from_indY = queue_indY[queue_start_ind];
-    --queue_size;
-    ++queue_start_ind;
-
-    label_mat.at<int>(from_indX, from_indY) = label_count;
-    for (int i = 0; i < 4; ++i) {
-      int this_indX = from_indX + dirs[i][0];
-      int this_indY = from_indY + dirs[i][1];
-
-      if (this_indX < 0 || this_indX >= N_SCAN)
-        continue;
-
-      if (this_indY < 0)
-        this_indY = HORIZON_SCAN - 1;
-      if (this_indY >= HORIZON_SCAN)
-        this_indY = 0;
-
-      if (label_mat.at<int>(this_indX, this_indY) != LABEL_INIT)
-        continue;
-
-      auto [d2, d1] = std::minmax(range_mat.at<float>(from_indX, from_indY),
-          range_mat.at<float>(this_indX, this_indY));
-
-      float alpha;
-      if (dirs[i][0] == 0)
-        alpha = segmentAlphaX;
-      else
-        alpha = segmentAlphaY;
-
-      float angle = atan2(d2 * sin(alpha), (d1 - d2 * cos(alpha)));
-
-      if (angle > segmentTheta) {
-        queue_indX[queue_end_ind] = this_indX;
-        queue_indY[queue_end_ind] = this_indY;
-        ++queue_size;
-        ++queue_end_ind;
-
-        label_mat.at<int>(this_indX, this_indY) = label_count;
-        line_count_flag[this_indX] = true;
-
-        all_pushed_indX[all_pushed_ind_size] = this_indX;
-        all_pushed_indY[all_pushed_ind_size] = this_indY;
-        ++all_pushed_ind_size;
-      }
-    }
-  }
-
-  bool feasible_segment = false;
-  if (all_pushed_ind_size >= 30) {
-    feasible_segment = true;
-  } else if (all_pushed_ind_size >= segmentValidPointNum) {
-    int line_count = 0;
-    for (size_t i = 0; i < N_SCAN; ++i) {
-      if (line_count_flag[i]) {
-        ++line_count;
-      }
-    }
-
-    if (line_count >= segmentValidLineNum)
-      feasible_segment = true;
-  }
-
-  if (feasible_segment) {
-    ++label_count;
-  } else {
-    for (int i = 0; i < all_pushed_ind_size; ++i) {
-      label_mat.at<int>(all_pushed_indX[i], all_pushed_indY[i]) = LABEL_INVALID;
-    }
-  }
-}
-
-void ImageProjection::LabelComponents(int row, int col) {
   bool line_count_flag[N_SCAN] = {false};
 
   st.push({row, col});
@@ -404,14 +317,14 @@ void ImageProjection::LabelComponents(int row, int col) {
 
       if (n_row >= 0 && n_row < N_SCAN && n_col >= 0 && n_col < HORIZON_SCAN &&
           label_mat.at<int>(n_row, n_col) == LABEL_INIT) {
-        auto& [d2, d1] = std::minmax(range_mat.at<float>(c_row, c_col),
+        auto [d2, d1] = std::minmax(range_mat.at<float>(c_row, c_col),
             range_mat.at<float>(n_row, n_col));
 
         float alpha = dirs[i][0] == 0 ? segmentAlphaX : segmentAlphaY;
         float angle = atan2(d2 * sin(alpha), d1 - d2 * cos(alpha));
 
         if (angle > segmentTheta) {
-          stack.push({n_row, n_col});
+          st.push({n_row, n_col});
           label_mat.at<int>(n_row, n_col) = label_count;
           line_count_flag[n_row] = true;
         }
