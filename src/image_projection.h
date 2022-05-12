@@ -46,12 +46,6 @@ namespace tools {
 
 class ImageProjection final : public cyber::Component<> {
  public:
-  // using quiet_NaN = std::numeric_limits<float>::quiet_NaN;
-  using PointType = pcl::PointXYZI;
-  using PointCloudPtr = pcl::PointCloud<PointType>::Ptr;
-  // using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
-  using DriverPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
-
   ImageProjection();
   ~ImageProjection();
 
