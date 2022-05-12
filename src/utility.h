@@ -57,8 +57,8 @@ extern const float segmentAlphaX = ang_res_x / 180.0 * M_PI;
 extern const float segmentAlphaY = ang_res_y / 180.0 * M_PI;
 
 
-
-using PointCloudPtr = pcl::PointCloud<pcl::PointXYZI>::Ptr;
+using PointType = pcl::PointXYZI;
+using PointCloudPtr = pcl::PointCloud<PointType>::Ptr;
 // using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
 using DriverPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
 

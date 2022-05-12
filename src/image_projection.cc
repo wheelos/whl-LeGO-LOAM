@@ -41,7 +41,10 @@ static constexpr int LABEL_INIT = 0;
 static constexpr int LABEL_INVALID = 999999;
 
 ImageProjection::ImageProjection() :
-    nan_point(std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::quiet_NaN(), -1),
+    nan_point(std::numeric_limits<float>::quiet_NaN(),
+              std::numeric_limits<float>::quiet_NaN(),
+              std::numeric_limits<float>::quiet_NaN(),
+              -1),
     all_pushed_indX(N_SCAN * HORIZON_SCAN),
     all_pushed_indY(N_SCAN * HORIZON_SCAN),
     queue_indX(N_SCAN * HORIZON_SCAN),
@@ -141,6 +144,7 @@ void ImageProjection::ProjectPointCloud() {
 
     size_t row_idn;
     if (FLAGS_use_cloud_ring) {
+      // todo(zero): add ring?
       // row_idn = laser_cloud_in_ring->points[i].ring;
       row_idn = 0;
     } else {
@@ -152,8 +156,8 @@ void ImageProjection::ProjectPointCloud() {
       continue;
 
     float horizon_angle = atan2(this_point.x, this_point.y) * 180 / M_PI;
-
-    size_t column_idn = -round((horizon_angle - 90) / ang_res_x) + HORIZON_SCAN / 2;
+    // todo(zero): horizon_angle [-180, 180]
+    size_t column_idn = round(horizon_angle / ang_res_x) + HORIZON_SCAN / 2;
     if (column_idn >= HORIZON_SCAN)
       column_idn -= HORIZON_SCAN;
 
