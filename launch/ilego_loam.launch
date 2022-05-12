@@ -1,0 +1,7 @@
+<cyber>
+    <module>
+        <name>ilego_loam</name>
+        <dag_conf>/apollo/modules/tools/ilego_loam/dag/ilego_loam.dag</dag_conf>
+        <process_name>ilego_loam</process_name>
+    </module>
+</cyber>
