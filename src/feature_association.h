@@ -31,6 +31,8 @@
 #pragma once
 
 
+#include <numeric>
+
 #include "cyber/cyber.h"
 #include "modules/tools/ilego_loam/proto/cloud_info.pb.h"
 
@@ -83,8 +85,6 @@ class FeatureAssociation final : public apollo::cyber::TimerComponent {
 
   cloud_msgs::CloudInfo seg_info;
   apollo::common::Header cloud_header;
-
-
 };
 
 CYBER_REGISTER_COMPONENT(FeatureAssociation)

@@ -63,6 +63,18 @@ using PointCloudPtr = pcl::PointCloud<PointType>::Ptr;
 using DriverPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
 
 
+struct smoothness_t {
+  float value;
+  size_t ind;
+};
+
+struct by_value {
+  bool operator()(const smoothness_t& left, const smoothness_t& right) {
+    return left.value < right.value;
+  }
+};
+
+
 void ToPclPointCloud(const DriverPointCloudPtr& from, const PointCloudPtr& to) {
   for (int i = 0; i < from->point().size(); ++i) {
     pcl::PointXYZI point(from->point(i).x(),
