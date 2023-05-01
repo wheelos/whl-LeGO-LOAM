@@ -1,0 +1,11 @@
+syntax = "proto2";
+
+package nav_msgs;
+
+
+message Odometry {
+  optional Header header = 1;
+  optional string child_frame_id = 2;
+  optional geometry_msgs.PoseWithCovariance pose = 3;
+  optional geometry_msgs.TwistWithCovariance twist = 4;
+}

@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package sensor_msgs;
+
+import "proto/geometry_msgs/quaternion.proto";
+import "proto/geometry_msgs/vector3.proto";
+
+message Header {
+  optional float time = 1;
+}
+
+message Imu {
+  optional Header header = 1;
+
+  optional geometry_msgs.Quaternion orientation = 2;
+  repeated float orientation_covariance = 3;
+
+  optional geometry_msgs.Vector3 angular_velocity = 4;
+  repeated float angular_velocity_covariance = 5;
+
+  optional geometry_msgs.Vector3 linear_acceleration = 6;
+  repeated float linear_acceleration_covariance = 7;
+}

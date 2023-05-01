@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package geometry_msgs;
+
+
+message Vector3 {
+  optional float x = 1;
+  optional float y = 2;
+  optional float z = 3;
+}

@@ -27,17 +27,35 @@
 //  Created Date: 2022-5-5
 //  Author: daohu527
 
+#pragma once
 
 #include "cyber/cyber.h"
 
 namespace apollo {
 namespace tools {
 
+struct Pose {
+  double timestamp;
+  double roll;
+  double pitch;
+  double yaw;
+  Eigen::Vector3d linear_acceleration;
+  Eigen::Vector3d angular_velocity;
+
+  Eigen::Vector3d position;
+  Eigen::Vector3d velocity;
+  Eigen::Vector3d angle;
+};
+
+
 class FeatureAssociation final : public cyber::Component<> {
  public:
+  bool Init() override;
 
  private:
+  Pose pose_arr_[IMU_QUE_LENGTH];
 
+  PointCloudPtr segmented_cloud_;
 };
 
 CYBER_REGISTER_COMPONENT(FeatureAssociation)

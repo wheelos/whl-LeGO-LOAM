@@ -27,6 +27,9 @@
 //  Created Date: 2022-5-5
 //  Author: daohu527
 
+#pragma once
+
+#include <memory>
 
 #include "cyber/cyber.h"
 
@@ -35,9 +38,11 @@ namespace tools {
 
 class TransformFusion final : public cyber::Component<> {
  public:
+  bool Init() override;
 
  private:
-
+  std::shared_ptr<cyber::Reader<nav_msgs::Odometry>> sub_laser_odometry;
+  std::shared_ptr<cyber::Reader<nav_msgs::Odometry>> sub_odom_aft_mapped;
 };
 
 CYBER_REGISTER_COMPONENT(TransformFusion)

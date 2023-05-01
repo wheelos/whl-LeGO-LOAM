@@ -30,7 +30,6 @@
 
 #pragma once
 
-
 #include "pcl/point_cloud.h"
 #include "pcl/point_types.h"
 #include "pcl/filters/filter.h"
@@ -39,7 +38,6 @@
 
 namespace apollo {
 namespace tools {
-
 
 extern const int N_SCAN = 16;
 extern const int HORIZON_SCAN = 1800;
@@ -57,11 +55,20 @@ extern const float segmentAlphaX = ang_res_x / 180.0 * M_PI;
 extern const float segmentAlphaY = ang_res_y / 180.0 * M_PI;
 
 
+extern const float SCAN_PERIOD = 0.1;
+extern const int IMU_QUE_LENGTH = 200;
+
+
 using PointType = pcl::PointXYZI;
 using PointCloudPtr = pcl::PointCloud<PointType>::Ptr;
 // using PointCloudRPtr = pcl::PointCloud<pcl::PointXYZIR>::Ptr;
 using DriverPointCloudPtr = std::shared_ptr<apollo::drivers::PointCloud>;
 
+
+struct smoothness_t {
+  float value;
+  size_t ind;
+};
 
 void ToPclPointCloud(const DriverPointCloudPtr& from, const PointCloudPtr& to) {
   for (int i = 0; i < from->point().size(); ++i) {

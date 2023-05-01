@@ -27,6 +27,7 @@
 //  Created Date: 2022-5-5
 //  Author: daohu527
 
+#pragma once
 
 #include "cyber/cyber.h"
 
@@ -35,6 +36,7 @@ namespace tools {
 
 class MapOptmization final : public cyber::Component<> {
  public:
+  bool Init() override;
 
  private:
 
