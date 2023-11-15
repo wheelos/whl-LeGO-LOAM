@@ -23,7 +23,50 @@
 //   T. Shan and B. Englot. LeGO-LOAM: Lightweight and Ground-Optimized Lidar Odometry and Mapping on Variable Terrain
 //      IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS). October 2018.
 
-
 //  Created Date: 2022-5-5
 //  Author: daohu527
 
+#include "src/transform_fusion.h"
+
+TransformFusion::TransformFusion() {}
+
+~TransformFusion::TransformFusion() {}
+
+bool TransformFusion::Init() {
+  pub_laser_odometry2 = node_->CreateWriter<nav_msgs::Odometry>("/integrated_to_init");
+  sub_laser_odometry = node_->CreateReader<nav_msgs::Odometry>(
+    FLAGS_laser_odometry_topic,
+    [&](const std::shared_ptr<nav_msgs::Odometry>& laser_odometry) {
+      LaserOdometryHandler(laser_odometry);
+    });
+
+  sub_odom_aft_mapped = node_->CreateReader<nav_msgs::Odometry>(
+    FLAGS_odom_aft_mapped_topic,
+    [&](const std::shared_ptr<nav_msgs::Odometry>& laser_odometry) {
+      OdomAftMappedHandler(laser_odometry);
+    });
+
+  laser_odometry2.mutable_header()->set_frame_id("/camera_init");
+  laser_odometry2.set_child_frame_id("/camera");
+
+  laser_odometry_trans2.frame_id_ = "/camera_init";
+  laser_odometry_trans2.child_frame_id_ = "/camera";
+
+  map_2_camera_init_trans.frame_id_ = "/map";
+  map_2_camera_init_trans.child_frame_id_ = "/camera_init";
+
+  camera_2_base_link_trans.frame_id_ = "/camera";
+  camera_2_base_link_trans.child_frame_id_ = "/base_link";
+}
+
+void TransformFusion::TransformAssociateToMap() {
+
+}
+
+void TransformFusion::LaserOdometryHandler(const std::shared_ptr<nav_msgs::Odometry>& laser_odometry) {
+
+}
+
+void TransformFusion::OdomAftMappedHandler(const std::shared_ptr<nav_msgs::Odometry>& laser_odometry) {
+
+}

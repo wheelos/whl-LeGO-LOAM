@@ -27,6 +27,7 @@
 //  Created Date: 2022-5-5
 //  Author: daohu527
 
+#pragma once
 
 #include "cyber/cyber.h"
 

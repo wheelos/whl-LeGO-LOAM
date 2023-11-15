@@ -75,8 +75,8 @@ bool ImageProjection::Init() {
 
 void ImageProjection::AllocateMemory() {
   laser_cloud_in.reset(new pcl::PointCloud<PointType>());
-  // laser_cloud_in_ring.reset(new pcl::PointCloud<PointXYZIR>());
-  laser_cloud_in_ring.reset(new pcl::PointCloud<PointType>());
+  // todo(zero): need PointXYZIR
+  laser_cloud_in_ring.reset(new pcl::PointCloud<PointXYZIR>());
 
   full_cloud.reset(new pcl::PointCloud<PointType>());
   full_info_cloud.reset(new pcl::PointCloud<PointType>());
@@ -130,8 +130,9 @@ void ImageProjection::CopyPointCloud(const DriverPointCloudPtr& laser_cloud_msg)
 }
 
 void ImageProjection::FindStartEndAngle() {
-  seg_msg.set_start_orientation(atan2(laser_cloud_in->points.front().x, laser_cloud_in->points.front().y));
-  seg_msg.set_end_orientation(atan2(laser_cloud_in->points.back().x, laser_cloud_in->points.back().y) + 2 * M_PI);
+  // todo(zero): need check coor
+  seg_msg.set_start_orientation(atan2(laser_cloud_in->points.front().y, laser_cloud_in->points.front().x));
+  seg_msg.set_end_orientation(atan2(laser_cloud_in->points.back().y, laser_cloud_in->points.back().x) + 2 * M_PI);
 
   seg_msg.set_orientation_diff(seg_msg.end_orientation() - seg_msg.start_orientation());
   CHECK(seg_msg.orientation_diff() < 3 * M_PI) << "Point cloud orientation diff >= 3*M_PI";
@@ -142,11 +143,10 @@ void ImageProjection::ProjectPointCloud() {
   for (size_t i = 0; i < laser_cloud_in->points.size(); ++i) {
     PointType this_point = laser_cloud_in->points[i];
 
+    // Find the row and column index in the iamge for this point
     size_t row_idn;
     if (FLAGS_use_cloud_ring) {
-      // todo(zero): add ring?
-      // row_idn = laser_cloud_in_ring->points[i].ring;
-      row_idn = 0;
+      row_idn = laser_cloud_in_ring->points[i].ring;
     } else {
       float vertical_angle = atan2(this_point.z, sqrt(this_point.x*this_point.x + this_point.y*this_point.y)) * 180 / M_PI;
       row_idn = (vertical_angle + ang_bottom) / ang_res_y;
@@ -156,7 +156,7 @@ void ImageProjection::ProjectPointCloud() {
       continue;
 
     float horizon_angle = atan2(this_point.x, this_point.y) * 180 / M_PI;
-    // todo(zero): horizon_angle [-180, 180]
+    // todo(zero): horizon_angle [-180, 180], check
     size_t column_idn = round(horizon_angle / ang_res_x) + HORIZON_SCAN / 2;
     if (column_idn >= HORIZON_SCAN)
       column_idn -= HORIZON_SCAN;
@@ -181,6 +181,7 @@ void ImageProjection::ProjectPointCloud() {
 }
 
 void ImageProjection::GroundRemoval() {
+  // todo(zero): groundScanInd to kGroundScanInd
   for (size_t i = 0; i < groundScanInd; ++i) {
     for (size_t j = 0; j < HORIZON_SCAN; ++j) {
       size_t lower_ind = j + i * HORIZON_SCAN;
@@ -230,6 +231,7 @@ void ImageProjection::CloudSegmentation() {
   }
 
   int size_of_seg_cloud = 0;
+  // Extract segmented cloud for lidar odometry
   for (size_t i = 0; i < N_SCAN; ++i) {
     seg_msg.set_start_ring_index(i, size_of_seg_cloud - 1 + 5);
     for (size_t j = 0; j < HORIZON_SCAN; ++j) {

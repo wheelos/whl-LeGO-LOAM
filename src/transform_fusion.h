@@ -27,6 +27,9 @@
 //  Created Date: 2022-5-5
 //  Author: daohu527
 
+#pragma once
+
+#include <memory>
 
 #include "cyber/cyber.h"
 
@@ -35,9 +38,32 @@ namespace tools {
 
 class TransformFusion final : public cyber::Component<> {
  public:
+  TransformFusion();
+  ~TransformFusion();
+
+  bool Init() override;
 
  private:
+  void TransformAssociateToMap();
+  void LaserOdometryHandler(const std::shared_ptr<nav_msgs::Odometry>& laser_odometry);
+  void OdomAftMappedHandler(const std::shared_ptr<nav_msgs::Odometry>& laser_odometry);
 
+ private:
+  std::shared_ptr<cyber::Writer<nav_msgs::Odometry>> pub_laser_odometry2;
+  std::shared_ptr<cyber::Reader<nav_msgs::Odometry>> sub_laser_odometry;
+  std::shared_ptr<cyber::Reader<nav_msgs::Odometry>> sub_odom_aft_mapped;
+
+  nav_msgs::Odometry laser_odometry2;
+  tf::StampedTransform laser_odometry_trans2;
+  tf::TransformBroadcaster tf_broadcaster2;
+
+  tf::StampedTransform map_2_camera_init_trans;
+  tf::TransformBroadcaster tf_broadcaster_map_2_camera_init;
+
+  tf::StampedTransform camera_2_base_link_trans;
+  tf::TransformBroadcaster tf_broadcaster_camera_2_baselink;
+
+  std_msgs::Header current_header;
 };
 
 CYBER_REGISTER_COMPONENT(TransformFusion)
