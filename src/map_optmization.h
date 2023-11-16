@@ -34,8 +34,13 @@
 namespace apollo {
 namespace tools {
 
-class MapOptmization final : public cyber::Component<> {
+class MapOptmization final : public apollo::cyber::TimerComponent {
  public:
+  MapOptmization();
+  ~MapOptmization();
+
+  bool Init() override;
+  bool Proc() override;
 
  private:
 
