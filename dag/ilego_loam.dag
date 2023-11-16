@@ -7,3 +7,33 @@ module_config {
     }
   }
 }
+
+module_config {
+  module_library : "/apollo/bazel-bin/modules/tools/ilego_loam/src/libfeature_association.so"
+  components {
+    class_name : "FeatureAssociation"
+    config {
+      name : "feature_association"
+    }
+  }
+}
+
+module_config {
+  module_library : "/apollo/bazel-bin/modules/tools/ilego_loam/src/libmap_optmization.so"
+  components {
+    class_name : "MapOptmization"
+    config {
+      name : "map_optmization"
+    }
+  }
+}
+
+module_config {
+  module_library : "/apollo/bazel-bin/modules/tools/ilego_loam/src/libtransform_fusion.so"
+  components {
+    class_name : "TransformFusion"
+    config {
+      name : "transform_fusion"
+    }
+  }
+}

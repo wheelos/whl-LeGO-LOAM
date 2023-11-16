@@ -47,6 +47,8 @@ class FeatureAssociation final : public apollo::cyber::TimerComponent {
  public:
   using PointCloudReader = std::shared_ptr<cyber::Reader<apollo::drivers::PointCloud>>;
   using PointCloudWriter = std::shared_ptr<cyber::Writer<apollo::drivers::PointCloud>>;
+  using CorrectedImuReader = std::shared_ptr<cyber::Reader<apollo::localization::CorrectedImu>>;
+  using OdometryWriter = std::shared_ptr<cyber::Writer<nav_msgs::Odometry>>;
 
   FeatureAssociation();
   ~FeatureAssociation();
@@ -61,7 +63,7 @@ class FeatureAssociation final : public apollo::cyber::TimerComponent {
   PointCloudReader sub_segmented_cloud;
   std::shared_ptr<cyber::Reader<cloud_msgs::CloudInfo>> sub_segmented_cloud_info;
   PointCloudReader sub_outlier_cloud;
-  std::shared_ptr<cyber::Reader<apollo::localization::CorrectedImu>> sub_imu;
+  CorrectedImuReader sub_imu;
 
   PointCloudWriter pub_corner_points_sharp;
   PointCloudWriter pub_corner_points_less_sharp;
@@ -70,7 +72,7 @@ class FeatureAssociation final : public apollo::cyber::TimerComponent {
   PointCloudWriter pub_laser_cloud_corner_last;
   PointCloudWriter pub_laser_cloud_surf_last;
   PointCloudWriter pub_outlier_cloud_last;
-  std::shared_ptr<cyber::Writer<nav_msgs::Odometry>> pub_laser_odometry;
+  OdometryWriter pub_laser_odometry;
 
   pcl::VoxelGrid<PointType> downSizeFilter;
 
