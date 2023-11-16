@@ -33,8 +33,17 @@
 
 #include "cyber/cyber.h"
 
+#include "src/utility.h"
+
 namespace apollo {
 namespace tools {
+
+struct Transform {
+  Eigen::Translation3d translation;
+  Eigen::Quaterniond rotation;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
 
 class TransformFusion final : public cyber::Component<> {
  public:
@@ -63,7 +72,13 @@ class TransformFusion final : public cyber::Component<> {
   tf::StampedTransform camera_2_base_link_trans;
   tf::TransformBroadcaster tf_broadcaster_camera_2_baselink;
 
-  std_msgs::Header current_header;
+  Transform transform_sum;
+  Transform transform_incre;
+  Transform transform_mapped;
+  Transform transform_bef_mapped;
+  Transform transform_aft_mapped;
+
+  apollo::common::Header current_header;
 };
 
 CYBER_REGISTER_COMPONENT(TransformFusion)

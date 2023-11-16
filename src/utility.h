@@ -103,5 +103,13 @@ bool IsNaN(const pcl::PointXYZI& point) {
           !std::isfinite(point.z));
 }
 
+double rad2deg(double radians) {
+  return radians * 180.0 / M_PI;
+}
+
+double deg2rad(double degrees) {
+  return degrees * M_PI / 180.0;
+}
+
 }  // namespace tools
 }  // namespace apollo
